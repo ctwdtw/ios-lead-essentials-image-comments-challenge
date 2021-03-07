@@ -27,11 +27,9 @@ public class ImageCommentsLoader {
 class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	func test_init_doesNotRequestDataFromURL() {
 		// given
-		let url = anyURL()
-		let httpSpy = HTTPClientSpy()
 		
 		// when
-		let _ = ImageCommentsLoader(url: url, client: httpSpy)
+		let (_, httpSpy) = makeSUT()
 		
 		// then
 		XCTAssertEqual(httpSpy.requestedURLs, [])
@@ -40,13 +38,25 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	func test_loadImageComments_requestDataFromURL() {
 		// given
 		let url = anyURL()
-		let httpSpy = HTTPClientSpy()
-		let sut = ImageCommentsLoader(url: url, client: httpSpy)
+		let (sut, httpSpy) = makeSUT(url: url)
 		
 		// when
 		sut.loadImageComments()
 		
 		// then
 		XCTAssertEqual(httpSpy.requestedURLs, [url])
+	}
+	
+	private func makeSUT(
+		url: URL = anyURL(),
+		file: StaticString = #file,
+		line: UInt = #line
+	) -> (ImageCommentsLoader, HTTPClientSpy)
+	{
+		let httpSpy = HTTPClientSpy()
+		let sut = ImageCommentsLoader(url: url, client: httpSpy)
+		trackForMemoryLeaks(httpSpy, file: file, line: line)
+		trackForMemoryLeaks(sut, file: file, line: line)
+		return (sut, httpSpy)
 	}
 }
