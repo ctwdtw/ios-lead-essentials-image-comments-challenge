@@ -17,9 +17,20 @@ public class ImageCommentsLoader {
 		self.client = client
 	}
 	
-	public func loadImageComments() {
-		client.get(from: url) { (_) in
-			
+	public enum Error: Swift.Error {
+		case connectivity
+	}
+	
+	public typealias LoadImageCommentsCompletion = (Error?) -> Void
+	
+	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
+		client.get(from: url) { (result) in
+			switch result {
+			case .success((_, _)):
+				break
+			case .failure(_):
+				completion(Error.connectivity)
+			}
 		}
 	}
 }
@@ -41,7 +52,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT(url: url)
 		
 		// when
-		sut.loadImageComments()
+		sut.loadImageComments { _ in }
 		
 		// then
 		XCTAssertEqual(httpSpy.requestedURLs, [url])
@@ -53,11 +64,24 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT(url: url)
 		
 		// when
-		sut.loadImageComments()
-		sut.loadImageComments()
+		sut.loadImageComments { _ in }
+		sut.loadImageComments { _ in }
 		
 		// then
 		XCTAssertEqual(httpSpy.requestedURLs, [url, url])
+	}
+	
+	func test_loadImageComments_deliversConnectivityErrorOnClientError() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		
+		// when
+		var receivedError: Error?
+		sut.loadImageComments { receivedError = $0 }
+		httpSpy.complete(with: anyNSError())
+		
+		// then
+		XCTAssertEqual(receivedError as NSError?, ImageCommentsLoader.Error.connectivity as NSError?)
 	}
 	
 	private func makeSUT(
