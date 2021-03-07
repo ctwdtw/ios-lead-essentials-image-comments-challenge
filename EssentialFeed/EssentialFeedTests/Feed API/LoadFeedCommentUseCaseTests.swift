@@ -98,6 +98,17 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		}
 	}
 	
+	func test_loadImageComments_deliversInvalidDataErrorOn200HTTPResponseWithInvalidJSON() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		
+		// when, then
+		expect(sut, toReceive: .invalidData, when: {
+			let invalidJSON = "invalidJSON".data(using: .utf8)!
+			httpSpy.complete(withStatusCode: 200, data: invalidJSON)
+		})
+	}
+	
 	private func makeSUT(
 		url: URL = anyURL(),
 		file: StaticString = #file,
