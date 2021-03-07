@@ -19,6 +19,7 @@ public class ImageCommentsLoader {
 	
 	public enum Error: Swift.Error {
 		case connectivity
+		case invalidData
 	}
 	
 	public typealias LoadImageCommentsCompletion = (Error?) -> Void
@@ -27,7 +28,8 @@ public class ImageCommentsLoader {
 		client.get(from: url) { (result) in
 			switch result {
 			case .success((_, _)):
-				break
+				completion(Error.invalidData)
+				
 			case .failure(_):
 				completion(Error.connectivity)
 			}
@@ -82,6 +84,19 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		
 		// then
 		XCTAssertEqual(receivedErrors, [.connectivity])
+	}
+	
+	func test_loadImageComments_deliversInvalidDataErrorOnNon2xxHTTPResponse() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		
+		// when
+		var receivedErrors = [ImageCommentsLoader.Error?]()
+		sut.loadImageComments { receivedErrors.append($0) }
+		httpSpy.complete(withStatusCode: 199, data: anyData())
+		
+		// then
+		XCTAssertEqual(receivedErrors, [.invalidData])
 	}
 	
 	private func makeSUT(
