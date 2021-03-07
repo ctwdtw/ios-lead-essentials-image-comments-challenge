@@ -77,26 +77,20 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		// given
 		let (sut, httpSpy) = makeSUT()
 		
-		// when
-		var receivedErrors = [ImageCommentsLoader.Error?]()
-		sut.loadImageComments { receivedErrors.append($0) }
-		httpSpy.complete(with: anyNSError())
-		
-		// then
-		XCTAssertEqual(receivedErrors, [.connectivity])
+		// when, then
+		expect(sut, toReceive: .connectivity, when: {
+			httpSpy.complete(with: anyNSError())
+		})
 	}
 	
 	func test_loadImageComments_deliversInvalidDataErrorOnNon2xxHTTPResponse() {
 		// given
 		let (sut, httpSpy) = makeSUT()
 		
-		// when
-		var receivedErrors = [ImageCommentsLoader.Error?]()
-		sut.loadImageComments { receivedErrors.append($0) }
-		httpSpy.complete(withStatusCode: 199, data: anyData())
-		
-		// then
-		XCTAssertEqual(receivedErrors, [.invalidData])
+		// when, then
+		expect(sut, toReceive: .invalidData, when: {
+			httpSpy.complete(withStatusCode: 199, data: anyData())
+		})
 	}
 	
 	private func makeSUT(
@@ -111,4 +105,28 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		trackForMemoryLeaks(sut, file: file, line: line)
 		return (sut, httpSpy)
 	}
+	
+	private func expect(
+		_ sut: ImageCommentsLoader,
+		toReceive expectedError: ImageCommentsLoader.Error,
+		when action: ()-> Void,
+		file: StaticString = #file,
+		line: UInt = #line
+	) {
+		
+		// when
+		var receivedErrors = [ImageCommentsLoader.Error?]()
+		sut.loadImageComments { receivedErrors.append($0) }
+		action()
+		
+		// then
+		XCTAssertEqual(
+			receivedErrors,
+			[expectedError],
+			"expect to receive \(expectedError), but got \(receivedErrors) instead",
+			file: file,
+			line: line
+		)
+	}
+
 }
