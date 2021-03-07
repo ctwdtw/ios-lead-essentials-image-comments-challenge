@@ -87,10 +87,15 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		// given
 		let (sut, httpSpy) = makeSUT()
 		
-		// when, then
-		expect(sut, toReceive: .invalidData, when: {
-			httpSpy.complete(withStatusCode: 199, data: anyData())
-		})
+		let non2xxStatusCodes = [100, 300, 400, 500]
+		
+		non2xxStatusCodes.enumerated().forEach { (index, statusCode) in
+			// when, then
+			expect(sut, toReceive: .invalidData,
+				   when: { httpSpy.complete(withStatusCode: statusCode, data: anyData(), at: index) },
+				   at: index
+			)
+		}
 	}
 	
 	private func makeSUT(
@@ -110,6 +115,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		_ sut: ImageCommentsLoader,
 		toReceive expectedError: ImageCommentsLoader.Error,
 		when action: ()-> Void,
+		at index: Int = 0,
 		file: StaticString = #file,
 		line: UInt = #line
 	) {
@@ -123,7 +129,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		XCTAssertEqual(
 			receivedErrors,
 			[expectedError],
-			"expect to receive \(expectedError), but got \(receivedErrors) instead",
+			"expect to receive \(expectedError), but got \(receivedErrors) instead, at index: \(index)",
 			file: file,
 			line: line
 		)
