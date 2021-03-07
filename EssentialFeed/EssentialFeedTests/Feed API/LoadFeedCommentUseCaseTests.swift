@@ -9,6 +9,10 @@
 import XCTest
 import EssentialFeed
 
+public struct ImageComment: Equatable {
+	
+}
+
 public class ImageCommentsLoader {
 	private let client: HTTPClient
 	private let url: URL
@@ -22,16 +26,37 @@ public class ImageCommentsLoader {
 		case invalidData
 	}
 	
-	public typealias LoadImageCommentsCompletion = (Error?) -> Void
 	
+	struct RemoteImageComment: Codable {
+		
+	}
+	
+	struct RemoteImageComments: Codable {
+		let items: [RemoteImageComment]
+	}
+	
+	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
+	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
 		client.get(from: url) { (result) in
 			switch result {
-			case .success((_, _)):
-				completion(Error.invalidData)
+			case .success((let data, let response)):
+				guard response.statusCode == 200 else {
+					completion(.failure(Error.invalidData))
+					return
+				}
+				
+				do {
+					let comments = try JSONDecoder().decode(RemoteImageComments.self, from: data)
+					let imageComments = comments.items.map { _ in ImageComment() }
+					completion(.success(imageComments))
+					
+				} catch {
+					completion(.failure(.invalidData))
+				}
 				
 			case .failure(_):
-				completion(Error.connectivity)
+				completion(.failure(Error.connectivity))
 			}
 		}
 	}
@@ -78,7 +103,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT()
 		
 		// when, then
-		expect(sut, toReceive: .connectivity, when: {
+		expect(sut, toReceive: [.failure(.connectivity)], when: {
 			httpSpy.complete(with: anyNSError())
 		})
 	}
@@ -91,7 +116,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		
 		non2xxStatusCodes.enumerated().forEach { (index, statusCode) in
 			// when, then
-			expect(sut, toReceive: .invalidData,
+			expect(sut, toReceive: [.failure(.invalidData)],
 				   when: { httpSpy.complete(withStatusCode: statusCode, data: anyData(), at: index) },
 				   at: index
 			)
@@ -103,9 +128,24 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT()
 		
 		// when, then
-		expect(sut, toReceive: .invalidData, when: {
+		expect(sut, toReceive: [.failure(.invalidData)], when: {
 			let invalidJSON = "invalidJSON".data(using: .utf8)!
 			httpSpy.complete(withStatusCode: 200, data: invalidJSON)
+		})
+	}
+	
+	func test_loadImageComments_deliversEmptyItemsOn200HTTPResonseWithEmptyItemJSON() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		
+		// when, then
+		expect(sut, toReceive: [.success([])], when: {
+			let jsonRawString = """
+					{ "items": [] }
+				"""
+			let emptyItemJSON = jsonRawString.data(using: .utf8)!
+			
+			httpSpy.complete(withStatusCode: 200, data: emptyItemJSON)
 		})
 	}
 	
@@ -124,7 +164,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	
 	private func expect(
 		_ sut: ImageCommentsLoader,
-		toReceive expectedError: ImageCommentsLoader.Error,
+		toReceive expectedResults: [ImageCommentsLoader.LoadImageCommentsResult],
 		when action: ()-> Void,
 		at index: Int = 0,
 		file: StaticString = #file,
@@ -132,18 +172,30 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	) {
 		
 		// when
-		var receivedErrors = [ImageCommentsLoader.Error?]()
-		sut.loadImageComments { receivedErrors.append($0) }
+		var receivedResults = [ImageCommentsLoader.LoadImageCommentsResult]()
+		sut.loadImageComments { receivedResults.append($0) }
 		action()
 		
 		// then
 		XCTAssertEqual(
-			receivedErrors,
-			[expectedError],
-			"expect to receive \(expectedError), but got \(receivedErrors) instead, at index: \(index)",
-			file: file,
-			line: line
-		)
+			receivedResults.count,
+			expectedResults.count,
+			"expected to received \(expectedResults.count) results, but got \(receivedResults.count) instead",
+			file: file, line: line)
+		
+		zip(receivedResults, expectedResults).forEach { resultPair in
+			switch resultPair {
+			case let (.success(receivedItems), .success(expectedItems)):
+				XCTAssertEqual(receivedItems, expectedItems, file: file, line: line)
+			
+			case let (.failure(receivedError), .failure(expectedError)):
+				XCTAssertEqual(receivedError, expectedError, file: file, line: line)
+			
+			default:
+				XCTFail("expect to receive \(resultPair.1), but got \(resultPair.0) instead, at index: \(index)", file: file, line: line)
+			}
+				
+		}
 	}
 
 }
