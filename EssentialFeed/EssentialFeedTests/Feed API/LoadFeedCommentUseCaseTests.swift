@@ -7,9 +7,21 @@
 //
 
 import XCTest
+import EssentialFeed
+
+public class ImageCommentsLoader {
+	private let client: HTTPClient
+	public init(client: HTTPClient) {
+		self.client = client
+	}
+}
 
 class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
-	func testCanFail() {
-		//XCTFail()
+	func test_init_doesNotRequestDataFromURL() {
+		let httpSpy = HTTPClientSpy()
+		let _ = ImageCommentsLoader(client: httpSpy)
+		
+		XCTAssertEqual(httpSpy.requestedURLs, [])
 	}
+	
 }
