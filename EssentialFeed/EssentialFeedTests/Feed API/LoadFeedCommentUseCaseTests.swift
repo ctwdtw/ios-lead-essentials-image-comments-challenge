@@ -76,12 +76,12 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT()
 		
 		// when
-		var receivedError: Error?
-		sut.loadImageComments { receivedError = $0 }
+		var receivedErrors = [ImageCommentsLoader.Error?]()
+		sut.loadImageComments { receivedErrors.append($0) }
 		httpSpy.complete(with: anyNSError())
 		
 		// then
-		XCTAssertEqual(receivedError as NSError?, ImageCommentsLoader.Error.connectivity as NSError?)
+		XCTAssertEqual(receivedErrors, [.connectivity])
 	}
 	
 	private func makeSUT(
