@@ -42,37 +42,29 @@ public class ImageCommentsLoader {
 	}
 	
 	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
-	public typealias LoadImageCommentsResult = Result<[ImageComment], Swift.Error>
+	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
 		client.get(from: url) { [unowned self] (result) in
-			switch result {
-			case .success((let data, let response)):
-				do {
-					let imageComments = try self.map(data: data, httpURLResponse: response)
-					completion(.success(imageComments))
-					
-				} catch {
-					completion(.failure(error))
-				}
-				
-			case .failure(_):
-				completion(.failure(Error.connectivity))
-			}
+			let imageCommentsResult = result
+				.mapError { _ in Error.connectivity }
+				.flatMap { self.map(data: $0.0, httpURLResponse: $0.1) }
+			
+			completion(imageCommentsResult)
 		}
 	}
 	
-	private func map(data: Data, httpURLResponse: HTTPURLResponse) throws -> [ImageComment] {
+	private func map(data: Data, httpURLResponse: HTTPURLResponse) -> LoadImageCommentsResult {
 		guard httpURLResponse.statusCode == 200 else {
-			throw Error.invalidData
+			return .failure(Error.invalidData)
 		}
 		
 		do {
 			let remoteComments = try JSONDecoder().decode(RemoteImageComments.self, from: data)
 			let imageComments = remoteComments.items.map { $0.toModel() }
-			return imageComments
+			return .success(imageComments)
 			
 		} catch {
-			throw Error.invalidData
+			return .failure(Error.invalidData)
 			
 		}
 	}
