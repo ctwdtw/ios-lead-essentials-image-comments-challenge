@@ -41,16 +41,21 @@ public class ImageCommentsLoader {
 		let items: [RemoteImageComment]
 	}
 	
+	private var loadImageCommentsTask: HTTPClientTask?
+	private var loadImageCommentsCompletion: LoadImageCommentsCompletion?
+	
 	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
 	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
+
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
-	 	loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
+		loadImageCommentsCompletion = completion
+		loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
 			guard let self = self else { return }
 			let imageCommentsResult = result
 				.mapError { _ in Error.connectivity }
 				.flatMap { self.map(data: $0.0, httpURLResponse: $0.1) }
 			
-			completion(imageCommentsResult)
+			self.loadImageCommentsCompletion?(imageCommentsResult)
 		}
 	}
 	
@@ -70,8 +75,8 @@ public class ImageCommentsLoader {
 		}
 	}
 	
-	private var loadImageCommentsTask: HTTPClientTask?
 	public func cancelLoadImageComments() {
+		loadImageCommentsCompletion = nil
 		loadImageCommentsTask?.cancel()
 	}
 }

@@ -136,6 +136,19 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		XCTAssertEqual(httpSpy.cancelledURLs, [url], "expect cancelled URL request after `cancelLoadImageComments` message is sent to sut")
 	}
 	
+	func test_loadImageComments_doesNotDeliverResultAfterSUTcancelLoadImageComments() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		let item = makeItem(id: UUID(), message: "a message", createAt: anyRoundDate(), username: "a username")
+		let json = makeItemsJSON([item.json])
+		
+		// when, then
+		expect(sut, toReceive: [], when: {
+			sut.cancelLoadImageComments()
+			httpSpy.complete(withStatusCode: 200, data: json)
+		})
+	}
+	
 	private func makeSUT(
 		url: URL = anyURL(),
 		file: StaticString = #file,
@@ -165,9 +178,9 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		
 		// then
 		XCTAssertEqual(
-			receivedResults.count,
 			expectedResults.count,
-			"expected to received \(expectedResults.count) results, but got \(receivedResults.count) instead",
+			receivedResults.count,
+			"expected to received \(expectedResults.count) results, but got \(receivedResults.count) results instead",
 			file: file, line: line)
 		
 		zip(receivedResults, expectedResults).forEach { resultPair in
