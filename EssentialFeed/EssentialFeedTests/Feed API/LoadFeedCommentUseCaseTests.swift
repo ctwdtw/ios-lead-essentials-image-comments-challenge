@@ -96,6 +96,19 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		})
 	}
 	
+	func test_loadImageComments_deliversItemsOn200HTTPResponseWithItemJSON() {
+		// given
+		let (sut, httpSpy) = makeSUT()
+		let item0 = makeItem(id: UUID(), message: "a message", createAt: anyRoundDate(), username: "a username")
+		let item1 = makeItem(id: UUID(), message: "another message", createAt: anyRoundDate(), username: "another username")
+		
+		// when, then
+		expect(sut, toReceive: [.success([item0.model, item1.model])], when: {
+			let json = makeItemsJSON([item0.json, item1.json])
+			httpSpy.complete(withStatusCode: 200, data: json)
+		})
+	}
+	
 	private func makeSUT(
 		url: URL = anyURL(),
 		file: StaticString = #file,
@@ -144,5 +157,40 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 				
 		}
 	}
-
+	
+	private func makeItemsJSON(_ items: [[String: Any]]) -> Data {
+		let json = ["items": items]
+		return try! JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
+	}
+	
+	private func makeItem(
+		id: UUID,
+		message: String,
+		createAt date: Date,
+		username: String
+	) -> (model: ImageComment, json: [String: Any])
+	{
+		let item = ImageComment(
+			id: id,
+			message: message,
+			createAt: date,
+			author: username
+		)
+		
+		let json: [String: Any] = [
+			"id": id.uuidString,
+			"message": message,
+			"create_at": ISO8601DateFormatter().string(from: date),
+			"author": ["username": username]
+		]
+		
+		return (item, json)
+	}
+	
+	private func anyRoundDate() -> Date {
+		let date = Date()
+		let diff = Calendar.current.component(.nanosecond, from: date)
+		let roundDate = Calendar.current.date(byAdding: .nanosecond, value: -diff, to: date)
+		return roundDate!
+	}
 }

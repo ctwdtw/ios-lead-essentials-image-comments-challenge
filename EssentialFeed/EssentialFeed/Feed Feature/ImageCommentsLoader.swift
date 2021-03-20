@@ -21,12 +21,23 @@ public class ImageCommentsLoader {
 		case invalidData
 	}
 	
-	
-	struct RemoteImageComment: Codable {
+	struct RemoteImageComment: Decodable {
+		let id: String
+		let message: String
+		let createAt: String
+		let author: RemoteUser
 		
+		private enum CodingKeys: String, CodingKey {
+			case id, message, author
+			case createAt = "create_at"
+		}
 	}
 	
-	struct RemoteImageComments: Codable {
+	struct RemoteUser: Decodable {
+		let username: String
+	}
+	
+	struct RemoteImageComments: Decodable {
 		let items: [RemoteImageComment]
 	}
 	
@@ -43,7 +54,7 @@ public class ImageCommentsLoader {
 				
 				do {
 					let comments = try JSONDecoder().decode(RemoteImageComments.self, from: data)
-					let imageComments = comments.items.map { _ in ImageComment() }
+					let imageComments = comments.items.map { $0.toModel() }
 					completion(.success(imageComments))
 					
 				} catch {
@@ -54,5 +65,18 @@ public class ImageCommentsLoader {
 				completion(.failure(Error.connectivity))
 			}
 		}
+	}
+}
+
+private extension ImageCommentsLoader.RemoteImageComment {
+	func toModel() -> ImageComment {
+		let uuid = UUID(uuidString: id)!
+		let date = ISO8601DateFormatter().date(from: createAt)!
+		return ImageComment(
+			id: uuid,
+			message: message,
+			createAt: date,
+			author: author.username
+		)
 	}
 }

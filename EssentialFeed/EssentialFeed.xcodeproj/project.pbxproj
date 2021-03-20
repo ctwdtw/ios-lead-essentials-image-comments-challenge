@@ -285,8 +285,8 @@
 				08F8822C236499B200CAEE16 /* FeedCache.swift */,
 				08FC5AA922D5F47900148E12 /* FeedImageDataLoader.swift */,
 				0804862D236345A40087ED48 /* FeedImageDataCache.swift */,
-				636A707C25F527CB001A43ED /* ImageCommentsLoader.swift */,
 				636A708225F52809001A43ED /* ImageComment.swift */,
+				636A707C25F527CB001A43ED /* ImageCommentsLoader.swift */,
 			);
 			path = "Feed Feature";
 			sourceTree = "<group>";

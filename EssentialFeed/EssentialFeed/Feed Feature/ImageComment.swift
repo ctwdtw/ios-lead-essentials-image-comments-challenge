@@ -8,5 +8,22 @@
 
 import Foundation
 public struct ImageComment: Equatable {
+	public let id: UUID
+	public let message: String
+	public let createAt: Date
+	public let author: String
 	
+	public init(
+		id: UUID,
+		message: String,
+		createAt: Date,
+		author: String
+	) {
+		self.id = id
+		self.message = message
+		self.createAt = createAt
+		self.author = author
+	}
 }
+
+
