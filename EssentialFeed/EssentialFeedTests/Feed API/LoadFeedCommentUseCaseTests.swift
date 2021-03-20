@@ -120,6 +120,22 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		XCTAssertNil(receivedResult)
 	}
 	
+	func test_cancelLoadImageComments_cancelsClientURLRequest() {
+		// given
+		let url = anyURL()
+		let (sut, httpSpy) = makeSUT(url: url)
+		
+		// when
+		sut.loadImageComments { _ in }
+		
+		XCTAssertTrue(httpSpy.cancelledURLs.isEmpty, "expect no cancelled URL request until `cancelLoadImageComments` message is sent to sut")
+		
+		sut.cancelLoadImageComments()
+		
+		// then
+		XCTAssertEqual(httpSpy.cancelledURLs, [url], "expect cancelled URL request after `cancelLoadImageComments` message is sent to sut")
+	}
+	
 	private func makeSUT(
 		url: URL = anyURL(),
 		file: StaticString = #file,

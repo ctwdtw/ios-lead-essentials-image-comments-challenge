@@ -44,7 +44,7 @@ public class ImageCommentsLoader {
 	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
 	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
-		client.get(from: url) { [weak self] (result) in
+	 	loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
 			guard let self = self else { return }
 			let imageCommentsResult = result
 				.mapError { _ in Error.connectivity }
@@ -68,6 +68,11 @@ public class ImageCommentsLoader {
 			return .failure(Error.invalidData)
 			
 		}
+	}
+	
+	private var loadImageCommentsTask: HTTPClientTask?
+	public func cancelLoadImageComments() {
+		loadImageCommentsTask?.cancel()
 	}
 }
 
