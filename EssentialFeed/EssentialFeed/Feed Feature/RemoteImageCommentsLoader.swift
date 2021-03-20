@@ -1,5 +1,5 @@
 //
-//  ImageCommentsLoader.swift
+//  RemoteImageCommentsLoader.swift
 //  EssentialFeed
 //
 //  Created by Paul Lee on 2021/3/7.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-public class ImageCommentsLoader {
+public class RemoteImageCommentsLoader {
 	private let client: HTTPClient
 	private let url: URL
 	public init(url: URL, client: HTTPClient) {
@@ -81,13 +81,13 @@ public class ImageCommentsLoader {
 	}
 }
 
-private extension Array where Element == ImageCommentsLoader.RemoteImageComment {
+private extension Array where Element == RemoteImageCommentsLoader.RemoteImageComment {
 	func toModels() -> [ImageComment] {
 		map { $0.toModel() }
 	}
 }
 
-private extension ImageCommentsLoader.RemoteImageComment {
+private extension RemoteImageCommentsLoader.RemoteImageComment {
 	func toModel() -> ImageComment {
 		let uuid = UUID(uuidString: id)!
 		let date = ISO8601DateFormatter().date(from: createAt)!

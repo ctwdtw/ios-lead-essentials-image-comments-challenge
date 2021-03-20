@@ -108,10 +108,10 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	func test_loadImageComments_doesNotDeliverResultAfterSUTHasBeenDeallocated() {
 		// given
 		let httpSpy = HTTPClientSpy()
-		var sut: ImageCommentsLoader? = ImageCommentsLoader(url: anyURL(), client: httpSpy)
+		var sut: RemoteImageCommentsLoader? = RemoteImageCommentsLoader(url: anyURL(), client: httpSpy)
 		
 		// when
-		var receivedResult: ImageCommentsLoader.LoadImageCommentsResult?
+		var receivedResult: RemoteImageCommentsLoader.LoadImageCommentsResult?
 		sut?.loadImageComments { receivedResult = $0 }
 		sut = nil
 		httpSpy.complete(withStatusCode: 200, data: makeItemsJSON([]))
@@ -153,18 +153,18 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		url: URL = anyURL(),
 		file: StaticString = #file,
 		line: UInt = #line
-	) -> (ImageCommentsLoader, HTTPClientSpy)
+	) -> (RemoteImageCommentsLoader, HTTPClientSpy)
 	{
 		let httpSpy = HTTPClientSpy()
-		let sut = ImageCommentsLoader(url: url, client: httpSpy)
+		let sut = RemoteImageCommentsLoader(url: url, client: httpSpy)
 		trackForMemoryLeaks(httpSpy, file: file, line: line)
 		trackForMemoryLeaks(sut, file: file, line: line)
 		return (sut, httpSpy)
 	}
 	
 	private func expect(
-		_ sut: ImageCommentsLoader,
-		toReceive expectedResults: [ImageCommentsLoader.LoadImageCommentsResult],
+		_ sut: RemoteImageCommentsLoader,
+		toReceive expectedResults: [RemoteImageCommentsLoader.LoadImageCommentsResult],
 		when action: ()-> Void,
 		at index: Int = 0,
 		file: StaticString = #file,
@@ -172,7 +172,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 	) {
 		
 		// when
-		var receivedResults = [ImageCommentsLoader.LoadImageCommentsResult]()
+		var receivedResults = [RemoteImageCommentsLoader.LoadImageCommentsResult]()
 		sut.loadImageComments { receivedResults.append($0) }
 		action()
 		
