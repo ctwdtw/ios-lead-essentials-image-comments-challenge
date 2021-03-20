@@ -50,7 +50,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT()
 		
 		// when, then
-		expect(sut, toReceive: [.failure(.connectivity)], when: {
+		expect(sut, toReceive: [.failure(ImageCommentsLoader.Error.connectivity)], when: {
 			httpSpy.complete(with: anyNSError())
 		})
 	}
@@ -63,7 +63,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		
 		non2xxStatusCodes.enumerated().forEach { (index, statusCode) in
 			// when, then
-			expect(sut, toReceive: [.failure(.invalidData)],
+			expect(sut, toReceive: [.failure(ImageCommentsLoader.Error.invalidData)],
 				   when: { httpSpy.complete(withStatusCode: statusCode, data: anyData(), at: index) },
 				   at: index
 			)
@@ -75,7 +75,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT()
 		
 		// when, then
-		expect(sut, toReceive: [.failure(.invalidData)], when: {
+		expect(sut, toReceive: [.failure(ImageCommentsLoader.Error.invalidData)], when: {
 			let invalidJSON = "invalidJSON".data(using: .utf8)!
 			httpSpy.complete(withStatusCode: 200, data: invalidJSON)
 		})
@@ -144,7 +144,7 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 			case let (.success(receivedItems), .success(expectedItems)):
 				XCTAssertEqual(receivedItems, expectedItems, file: file, line: line)
 			
-			case let (.failure(receivedError), .failure(expectedError)):
+			case let (.failure(receivedError as NSError), .failure(expectedError as NSError)):
 				XCTAssertEqual(receivedError, expectedError, file: file, line: line)
 			
 			default:
