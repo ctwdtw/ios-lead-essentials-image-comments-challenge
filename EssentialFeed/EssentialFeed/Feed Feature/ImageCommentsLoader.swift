@@ -61,13 +61,19 @@ public class ImageCommentsLoader {
 		
 		do {
 			let remoteComments = try JSONDecoder().decode(RemoteImageComments.self, from: data)
-			let imageComments = remoteComments.items.map { $0.toModel() }
+			let imageComments = remoteComments.items.toModels()
 			return .success(imageComments)
 			
 		} catch {
 			return .failure(Error.invalidData)
 			
 		}
+	}
+}
+
+private extension Array where Element == ImageCommentsLoader.RemoteImageComment {
+	func toModels() -> [ImageComment] {
+		map { $0.toModel() }
 	}
 }
 
