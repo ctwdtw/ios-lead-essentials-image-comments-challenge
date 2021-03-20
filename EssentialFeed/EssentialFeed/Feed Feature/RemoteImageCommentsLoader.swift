@@ -8,7 +8,15 @@
 
 import Foundation
 
-public class RemoteImageCommentsLoader {
+public protocol ImageCommentsLoader {
+	typealias LoadImageCommentsResult = Result<[ImageComment], Error>
+	typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
+	func loadImageComments(completion: @escaping LoadImageCommentsCompletion)
+	
+	func cancelLoadImageComments()
+}
+
+public class RemoteImageCommentsLoader: ImageCommentsLoader {
 	private let client: HTTPClient
 	private let url: URL
 	public init(url: URL, client: HTTPClient) {
@@ -44,9 +52,6 @@ public class RemoteImageCommentsLoader {
 	private var loadImageCommentsTask: HTTPClientTask?
 	private var loadImageCommentsCompletion: LoadImageCommentsCompletion?
 	
-	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
-	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
-
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
 		loadImageCommentsCompletion = completion
 		loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
