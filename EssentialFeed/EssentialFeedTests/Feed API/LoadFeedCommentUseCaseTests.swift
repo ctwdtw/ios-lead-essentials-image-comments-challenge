@@ -87,12 +87,8 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		
 		// when, then
 		expect(sut, toReceive: [.success([])], when: {
-			let jsonRawString = """
-					{ "items": [] }
-				"""
-			let emptyItemJSON = jsonRawString.data(using: .utf8)!
-			
-			httpSpy.complete(withStatusCode: 200, data: emptyItemJSON)
+			let emptyItemsJSON = makeItemsJSON([])
+			httpSpy.complete(withStatusCode: 200, data: emptyItemsJSON)
 		})
 	}
 	
