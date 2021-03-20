@@ -44,7 +44,8 @@ public class ImageCommentsLoader {
 	public typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
 	public typealias LoadImageCommentsResult = Result<[ImageComment], Error>
 	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
-		client.get(from: url) { [unowned self] (result) in
+		client.get(from: url) { [weak self] (result) in
+			guard let self = self else { return }
 			let imageCommentsResult = result
 				.mapError { _ in Error.connectivity }
 				.flatMap { self.map(data: $0.0, httpURLResponse: $0.1) }

@@ -105,6 +105,21 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		})
 	}
 	
+	func test_loadImageComments_doesNotDeliverResultAfterSUTHasBeenDeallocated() {
+		// given
+		let httpSpy = HTTPClientSpy()
+		var sut: ImageCommentsLoader? = ImageCommentsLoader(url: anyURL(), client: httpSpy)
+		
+		// when
+		var receivedResult: ImageCommentsLoader.LoadImageCommentsResult?
+		sut?.loadImageComments { receivedResult = $0 }
+		sut = nil
+		httpSpy.complete(withStatusCode: 200, data: makeItemsJSON([]))
+		
+		// then
+		XCTAssertNil(receivedResult)
+	}
+	
 	private func makeSUT(
 		url: URL = anyURL(),
 		file: StaticString = #file,
