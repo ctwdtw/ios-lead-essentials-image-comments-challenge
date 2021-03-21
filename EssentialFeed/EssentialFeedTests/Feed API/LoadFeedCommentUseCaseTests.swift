@@ -126,27 +126,28 @@ class LoadImageCommentsFromRemoteUseCaseTests: XCTestCase {
 		let (sut, httpSpy) = makeSUT(url: url)
 		
 		// when
-		sut.loadImageComments { _ in }
+		let task = sut.loadImageComments { _ in }
 		
 		XCTAssertTrue(httpSpy.cancelledURLs.isEmpty, "expect no cancelled URL request until `cancelLoadImageComments` message is sent to sut")
 		
-		sut.cancelLoadImageComments()
+		task.cancel()
 		
 		// then
 		XCTAssertEqual(httpSpy.cancelledURLs, [url], "expect cancelled URL request after `cancelLoadImageComments` message is sent to sut")
 	}
 	
-	func test_loadImageComments_doesNotDeliverResultAfterSUTcancelLoadImageComments() {
+	func test_loadImageComments_doesNotDeliverResultAfterCancelLoadImageComments() {
 		// given
 		let (sut, httpSpy) = makeSUT()
-		let item = makeItem(id: UUID(), message: "a message", createAt: anyRoundDate(), username: "a username")
-		let json = makeItemsJSON([item.json])
+		var receivedResult = [ImageCommentsLoader.LoadImageCommentsResult]()
+		let task = sut.loadImageComments { receivedResult.append($0) }
 		
-		// when, then
-		expect(sut, toReceive: [], when: {
-			sut.cancelLoadImageComments()
-			httpSpy.complete(withStatusCode: 200, data: json)
-		})
+		// when
+		task.cancel()
+		httpSpy.complete(with: anyNSError())
+		
+		// then
+		XCTAssertTrue(receivedResult.isEmpty)
 	}
 	
 	private func makeSUT(

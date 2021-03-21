@@ -8,12 +8,14 @@
 
 import Foundation
 
+public protocol ImageCommentLoaderTask {
+	func cancel()
+}
+
 public protocol ImageCommentsLoader {
 	typealias LoadImageCommentsResult = Result<[ImageComment], Error>
 	typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
-	func loadImageComments(completion: @escaping LoadImageCommentsCompletion)
-	
-	func cancelLoadImageComments()
+	func loadImageComments(completion: @escaping LoadImageCommentsCompletion) -> ImageCommentLoaderTask
 }
 
 public class RemoteImageCommentsLoader: ImageCommentsLoader {
@@ -49,19 +51,38 @@ public class RemoteImageCommentsLoader: ImageCommentsLoader {
 		let items: [RemoteImageComment]
 	}
 	
-	private var loadImageCommentsTask: HTTPClientTask?
-	private var loadImageCommentsCompletion: LoadImageCommentsCompletion?
+	private class LoadImageCommentsTaskWrapper: ImageCommentLoaderTask {
+		private var loadImageCommentsCompletion: LoadImageCommentsCompletion?
+		var loadImageCommentsTask: HTTPClientTask?
+		
+		init(completion: @escaping LoadImageCommentsCompletion) {
+			self.loadImageCommentsCompletion = completion
+		}
+		
+		func complete(with result: LoadImageCommentsResult) {
+			loadImageCommentsCompletion?(result)
+		}
+		
+		func cancel() {
+			loadImageCommentsCompletion = nil
+			loadImageCommentsTask?.cancel()
+		}
+	}
 	
-	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) {
-		loadImageCommentsCompletion = completion
-		loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
+	@discardableResult
+	public func loadImageComments(completion: @escaping LoadImageCommentsCompletion) -> ImageCommentLoaderTask {
+		let taskWrapper = LoadImageCommentsTaskWrapper(completion: completion)
+		taskWrapper.loadImageCommentsTask = client.get(from: url) { [weak self] (result) in
 			guard let self = self else { return }
+			
 			let imageCommentsResult = result
 				.mapError { _ in Error.connectivity }
 				.flatMap { self.map(data: $0.0, httpURLResponse: $0.1) }
 			
-			self.loadImageCommentsCompletion?(imageCommentsResult)
+			taskWrapper.complete(with: imageCommentsResult)
 		}
+		
+		return taskWrapper
 	}
 	
 	private func map(data: Data, httpURLResponse: HTTPURLResponse) -> LoadImageCommentsResult {
@@ -78,11 +99,6 @@ public class RemoteImageCommentsLoader: ImageCommentsLoader {
 			return .failure(Error.invalidData)
 			
 		}
-	}
-	
-	public func cancelLoadImageComments() {
-		loadImageCommentsCompletion = nil
-		loadImageCommentsTask?.cancel()
 	}
 }
 
