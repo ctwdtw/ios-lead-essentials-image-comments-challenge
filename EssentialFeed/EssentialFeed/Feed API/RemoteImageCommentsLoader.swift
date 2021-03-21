@@ -8,16 +8,6 @@
 
 import Foundation
 
-public protocol ImageCommentLoaderTask {
-	func cancel()
-}
-
-public protocol ImageCommentsLoader {
-	typealias LoadImageCommentsResult = Result<[ImageComment], Error>
-	typealias LoadImageCommentsCompletion = (LoadImageCommentsResult) -> Void
-	func loadImageComments(completion: @escaping LoadImageCommentsCompletion) -> ImageCommentLoaderTask
-}
-
 public class RemoteImageCommentsLoader: ImageCommentsLoader {
 	private let client: HTTPClient
 	private let url: URL
